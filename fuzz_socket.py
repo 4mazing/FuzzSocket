@@ -4,6 +4,7 @@ import random
 import time
 import string
 import os
+import sys
 
 hello = "0300001611e00000001200c1020100c2020102c0010a"
 set_comm = "0300001902f08032010000000000080000f0000001000101e0"
@@ -12,8 +13,8 @@ message_str = "0300002102f080320700000100000800080001120411440100ff0900040011000
 userdata_dict = {0:'01', 1:'02', 2:'03', 3:'07'}
 subfunction_dict = {0:'01', 1:'02', 2:'0c', 3:'0e', 4:'0f', 5:'10', 6:'13'}
 
-host = "172.18.15.108"
-port = 102
+host = sys.argv[1]
+dport = sys.argv[2]
 
 def randomString(n):
     return (''.join(map(lambda xx:(hex(ord(xx))[2:]),os.urandom(n))))[0:16]
@@ -68,14 +69,16 @@ logfile = open('./fuzzlog.log', 'w+')
 # os.system('ping 172.18.15.108')
 while True:
     replay_pkt = s7head() + s7para() + s7data()
-    replay = str2byte(replay_pkt)
+    fuzz_pkt = str2byte(replay_pkt)
+    hello_pkt = str2byte(hello)
+    comm_pkt = str2byte(set_comm)
     cliconn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    cliconn.connect((host, port))
-    cliconn.send(str2byte(hello))
+    cliconn.connect((host, int(dport)))
+    cliconn.send(hello_pkt)
     time.sleep(1)
-    cliconn.send(str2byte(set_comm))
+    cliconn.send(comm_pkt)
     time.sleep(1)
-    cliconn.send(str2byte(replay))
-    os.system('ping 172.18.15.108 -n 1 -w 3')
+    cliconn.send(fuzz_pkt)
+    os.system('ping %s -n 1 -w 3' %host)
     if cliconn.recv == '':
         logfile.write("%s\n%s\n\n" %(localtime(), replay_pkt))
